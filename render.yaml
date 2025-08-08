@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: graphrag-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: LITELLM_MODEL
+        value: openai/gpt-4.1
+      - key: FALKOR_HOST
+        value: falkordb         # internal name from the service below
+      - key: FALKOR_PORT
+        value: "6379"
+    healthCheckPath: /healthz
+    dependsOn:
+      - falkordb
+
+  - type: web
+    name: falkordb
+    env: docker
+    image:
+      url: falkordb/falkordb:latest
+    autoDeploy: true
+    plan: starter
+    disk:
+      name: falkor-data
+      mountPath: /data
+      sizeGB: 5
+    # Expose both DB and UI. Render needs one port declared; the DB listens on 6379.
+    # The admin UI runs on 3000 but doesn't need to be public; keep service "Private"
+    # (set in the dashboard after first deploy, or keep it web and restrict with a password proxy if you want).
+    # Render picks the lowest port as the primary one; DB is what we care about.
